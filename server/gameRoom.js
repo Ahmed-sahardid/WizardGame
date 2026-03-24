@@ -765,7 +765,7 @@ export class GameRoom {
 
   serializeFor(playerId) {
     const viewer = this.players.find((entry) => entry.id === playerId) || null;
-    const revealRoles = this.phase === PHASE.ENDED;
+    const revealRoles = this.phase === PHASE.ENDED || !viewer?.alive;
 
     const players = this.players.map((player) => ({
       id: player.id,

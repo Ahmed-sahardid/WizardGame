@@ -112,6 +112,25 @@ body {
   border-left: 2px solid #54417c;
 }
 
+.chat-message.system-critical {
+  background: #2d1f2d;
+  border-left-color: #ff6b6b;
+  color: #ff8787;
+  font-weight: bold;
+}
+
+.chat-message.system-action {
+  background: #1f2d1f;
+  border-left-color: #51cf66;
+  color: #69db7c;
+}
+
+.chat-message.system-info {
+  background: #1f252d;
+  border-left-color: #4c6ef5;
+  color: #74c0fc;
+}
+
 .chat-input-area {
   display: flex;
   gap: 0.4rem;

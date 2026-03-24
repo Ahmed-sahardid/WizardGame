@@ -44,6 +44,7 @@ export function createUI(network) {
     selectedSeatId: null,
     flippedSeatId: null,
     flippedRole: null,
+    lastActionFeedback: null,
   };
 
   elements.joinPublic.disabled = true;
@@ -313,10 +314,15 @@ export function createUI(network) {
           uiState.flippedSeatId = player.id;
           uiState.flippedRole = player.role;
           network.action("wizard_inspect", { targetId: player.id });
+          uiState.lastActionFeedback = "Inspecting...";
         }
 
         if (hasAction("vote_target") && state.phase === PHASE.VOTING) {
           network.action("vote_target", { targetId: player.id });
+          uiState.lastActionFeedback = "Vote cast.";
+          setTimeout(() => {
+            uiState.lastActionFeedback = null;
+          }, 1500);
         }
 
         render(state);
@@ -354,6 +360,25 @@ export function createUI(network) {
     state.logs.forEach((line) => {
       const item = document.createElement("div");
       item.className = "chat-message";
+
+      // Highlight phase changes and action results
+      if (
+        line.includes("started.") ||
+        line.includes("started") ||
+        line.includes("wins.")
+      ) {
+        item.className = "chat-message system-critical";
+      } else if (
+        line.includes("used") ||
+        line.includes("died") ||
+        line.includes("eliminated") ||
+        line.includes("locked")
+      ) {
+        item.className = "chat-message system-action";
+      } else if (line.includes("ready") || line.includes("joined")) {
+        item.className = "chat-message system-info";
+      }
+
       item.textContent = line;
       elements.chat.appendChild(item);
     });
@@ -387,16 +412,28 @@ export function createUI(network) {
       const readyTag = me?.ready ? "Ready" : "Not ready";
       elements.actionHint.textContent = `${hostTag} · ${readyTag} · Humans ${state.lobby.connectedHumans}/6 · Bots ${state.lobby.botCount}`;
     } else if (!state.private.alive) {
-      elements.actionHint.textContent = "You are dead. Observe and chat.";
-    } else if (state.private.role === ROLE.KILLER) {
+      elements.actionHint.textContent = `💀 You are dead. Watching ${state.phase} phase...`;
+    } else if (state.phase === PHASE.NIGHT) {
+      if (state.private.role === ROLE.KILLER) {
+        elements.actionHint.textContent =
+          "🔪 NIGHT: Select a target to kill (not a killer)";
+      } else if (state.private.role === ROLE.WIZARD) {
+        elements.actionHint.textContent =
+          "✨ NIGHT: Inspect a target or heal once/game";
+      } else {
+        elements.actionHint.textContent =
+          "🌙 NIGHT: Killers are choosing. Watch and wait.";
+      }
+    } else if (state.phase === PHASE.DISCUSSION) {
       elements.actionHint.textContent =
-        "Night: pick non-killer target, then kill.";
-    } else if (state.private.role === ROLE.WIZARD) {
+        "💬 DISCUSSION: Talk and accuse (members only)";
+    } else if (state.phase === PHASE.VOTING) {
       elements.actionHint.textContent =
-        "Night: inspect selected or heal once/game.";
-    } else {
-      elements.actionHint.textContent =
-        "Discussion/Voting: accuse selected seat.";
+        "🗳️  VOTING: Click a seat to vote (or vote skip)";
+    } else if (state.phase === PHASE.SETUP) {
+      elements.actionHint.textContent = "📋 SETUP: Waiting for night phase...";
+    } else if (state.phase === PHASE.ENDED) {
+      elements.actionHint.textContent = "🏁 GAME OVER: All roles revealed.";
     }
 
     if (state.private.wizardInspection) {
