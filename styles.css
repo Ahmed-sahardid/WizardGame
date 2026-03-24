@@ -1,0 +1,515 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+  background: #121019;
+  color: #f2f0ff;
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  min-height: 100vh;
+}
+
+.chat-sidebar {
+  background: #0f0d15;
+  border-right: 1px solid #322a47;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.chat-header {
+  padding: 1rem;
+  border-bottom: 1px solid #322a47;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.chat-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.room-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-pill {
+  font-size: 0.72rem;
+  border: 1px solid #4d4166;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  background: #1d1730;
+}
+
+.room-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto;
+  gap: 0.35rem;
+}
+
+.room-controls input {
+  min-width: 0;
+  background: #1b1728;
+  color: #f2f0ff;
+  border: 1px solid #322a47;
+  border-radius: 6px;
+  padding: 0.4rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+.room-controls button {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.76rem;
+}
+
+.chat-header button {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-message {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  padding: 0.4rem 0.6rem;
+  background: #1b1728;
+  border-radius: 6px;
+  border-left: 2px solid #54417c;
+}
+
+.chat-input-area {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  border-top: 1px solid #322a47;
+}
+
+.chat-input-area input {
+  flex: 1;
+  background: #1b1728;
+  color: #f2f0ff;
+  border: 1px solid #322a47;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.chat-input-area input::placeholder {
+  color: #8a7ba8;
+}
+
+.chat-input-area button {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #322a47;
+  background: #1b1728;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.status-compact {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.status-compact .badge {
+  background: #3b2f57;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+.status-panel,
+.actions,
+.log-panel,
+section {
+  background: #1b1728;
+  border: 1px solid #322a47;
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.status-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.status-panel p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.cards-section {
+  padding: 1rem;
+  border-bottom: 1px solid #322a47;
+}
+
+.control-panel {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #322a47;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.status-row {
+  display: flex;
+  gap: 2rem;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.status-item .label {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.action-group-title {
+  margin-bottom: 0.35rem;
+  display: block;
+}
+
+.status-item .value {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.5rem;
+}
+
+.players-section {
+  padding: 1rem;
+}
+
+.players-section h3 {
+  margin: 0 0 0.8rem 0;
+  font-size: 0.95rem;
+}
+
+.players-circle-section {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.players-circle-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.players-circle {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  margin: 0 auto;
+}
+
+.circle-seat {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: #251f35;
+  border: 2px solid #3e3358;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.circle-seat:hover:not(.dead) {
+  border-color: #54417c;
+  background: #2d2542;
+}
+
+.circle-seat.dead {
+  opacity: 0.4;
+}
+
+.circle-seat.voting {
+  border-color: #ffd700;
+  background: #3d3546;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.circle-seat.selected {
+  border-color: #66d0ff;
+  box-shadow: 0 0 12px rgba(102, 208, 255, 0.3);
+}
+
+.seat-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.seat-status {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.players-grid {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.player-card {
+  background: #251f35;
+  border: 1px solid #3e3358;
+  border-radius: 10px;
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.player-card.dead {
+  opacity: 0.55;
+}
+
+.player-name {
+  font-weight: 700;
+}
+
+.player-role {
+  font-size: 0.85rem;
+  color: #d8d2f6;
+}
+
+.actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+button,
+select {
+  background: #3b2f57;
+  color: #f8f6ff;
+  border: 1px solid #54417c;
+  border-radius: 8px;
+  padding: 0.48rem 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #4a3b6c;
+}
+
+button:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.timer-value {
+  font-variant-numeric: tabular-nums;
+  font-family: Monaco, "Courier New", monospace;
+}
+
+#log {
+  margin: 0.8rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.cards-grid {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+  justify-items: center;
+}
+
+.role-card {
+  width: 90px;
+  height: 140px;
+  border-radius: 10px;
+  border: 2px solid #2a1f3a;
+  display: grid;
+  align-content: space-between;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.role-card.hidden {
+  background: linear-gradient(135deg, #e8d5c4 0%, #d4c5b9 50%, #e8d5c4 100%);
+  justify-content: center;
+}
+
+.role-card.hidden::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(100, 50, 120, 0.15) 3px,
+    rgba(100, 50, 120, 0.15) 6px
+  );
+  pointer-events: none;
+}
+
+.role-card.hidden::after {
+  content: "♠";
+  position: absolute;
+  font-size: 2rem;
+  color: rgba(100, 50, 120, 0.25);
+  z-index: 1;
+}
+
+.role-card.revealed {
+  background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 50%, #f5f5f5 100%);
+  color: #1a1a1a;
+  padding: 0.5rem;
+  gap: 0.3rem;
+}
+
+.role-card.revealed.killer {
+  border-color: #d32f2f;
+}
+
+.role-card.revealed.wizard {
+  border-color: #6b5b95;
+}
+
+.role-card.revealed.member {
+  border-color: #2e7d32;
+}
+
+.role-card.dead {
+  opacity: 0.45;
+}
+
+.role-title {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.role-value {
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.role-note {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+@media (max-width: 980px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-sidebar {
+    min-height: 220px;
+    border-right: none;
+    border-bottom: 1px solid #322a47;
+  }
+
+  .players-circle {
+    width: 280px;
+    height: 280px;
+  }
+
+  .room-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}

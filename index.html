@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wizard Mafia Card Game</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-layout">
+      <!-- Chat Panel Left -->
+      <aside class="chat-sidebar">
+        <div class="chat-header">
+          <div class="room-top">
+            <h2>Game Chat</h2>
+            <span id="connection-status" class="room-pill">Offline</span>
+          </div>
+          <div class="room-controls">
+            <input
+              id="player-name"
+              type="text"
+              placeholder="Your name"
+              maxlength="16"
+            />
+            <input
+              id="room-id"
+              type="text"
+              placeholder="Room ID"
+              maxlength="8"
+            />
+            <button id="create-room" type="button">Create</button>
+            <button id="join-room" type="button">Join</button>
+            <button id="start-game" type="button" title="Start Game">
+              Start
+            </button>
+          </div>
+        </div>
+        <div id="chat" class="chat-messages"></div>
+        <div class="chat-input-area">
+          <input
+            id="chat-input"
+            type="text"
+            placeholder="Type message..."
+            autocomplete="off"
+          />
+          <button id="send-chat" type="button">Send</button>
+        </div>
+      </aside>
+
+      <!-- Main Game View -->
+      <div class="game-main">
+        <header class="topbar">
+          <h1>Wizard Mafia</h1>
+          <div class="status-compact">
+            <span id="you">You: Player 1</span>
+            <span id="phase" class="badge">Setup</span>
+          </div>
+        </header>
+
+        <!-- Cards -->
+        <section class="cards-section">
+          <div id="cards" class="cards-grid"></div>
+        </section>
+
+        <!-- Status and Actions -->
+        <section class="control-panel">
+          <div class="status-row">
+            <div class="status-item">
+              <span class="label">Round</span>
+              <span id="round" class="value">0</span>
+            </div>
+            <div class="status-item">
+              <span class="label">Wizard</span>
+              <span id="wizard-state" class="value">Unknown</span>
+            </div>
+            <div class="status-item" id="timer-container" style="display: none">
+              <span class="label">Timer</span>
+              <span id="timer" class="value timer-value">--</span>
+            </div>
+          </div>
+
+          <div class="status-row">
+            <div class="status-item">
+              <span class="label">Your Role</span>
+              <span id="role-badge" class="value">Unknown</span>
+            </div>
+            <div class="status-item">
+              <span class="label">Role Action</span>
+              <span id="action-hint" class="value">Waiting for game start</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="label action-group-title">Role Controls</div>
+            <div id="role-actions" class="action-grid"></div>
+          </div>
+
+          <div>
+            <div class="label action-group-title">Phase Controls</div>
+            <div id="global-actions" class="action-grid"></div>
+          </div>
+        </section>
+
+        <!-- Players Circle Table -->
+        <section class="players-circle-section">
+          <h3>Table</h3>
+          <div id="players-circle" class="players-circle"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
