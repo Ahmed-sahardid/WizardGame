@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: wizardgame
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20

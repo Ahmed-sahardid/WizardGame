@@ -47,8 +47,11 @@ function getOrCreateRoom(roomId) {
 
 function handleAction(room, playerId, action, payload = {}) {
   switch (action) {
+    case "toggle_ready":
+      room.toggleReady(playerId);
+      break;
     case "start_game":
-      room.startGame();
+      room.startGame(playerId);
       break;
     case "start_night":
       room.startNight(playerId);
@@ -112,16 +115,50 @@ const server = createServer((req, res) => {
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (socket) => {
-  const playerId = randomUUID();
-  sockets.set(playerId, socket);
-  send(socket, "connected", { playerId });
+  let playerId = null;
+
+  function bindIdentity(identity) {
+    playerId = identity;
+    sockets.set(playerId, socket);
+    send(socket, "connected", { playerId });
+
+    const existingRoomId = playerRoom.get(playerId);
+    if (existingRoomId && rooms.has(existingRoomId)) {
+      const room = rooms.get(existingRoomId);
+      try {
+        room.addPlayer({ id: playerId, name: null, socket });
+        send(socket, "room_joined", { roomId: existingRoomId, playerId });
+        room.emit();
+      } catch {
+        // ignore automatic rejoin failures; explicit join/create can recover
+      }
+    }
+  }
 
   socket.on("message", (raw) => {
     try {
       const message = JSON.parse(raw.toString());
       const { type, payload } = message;
 
+      if (type === "hello") {
+        const requestedId = String(payload?.sessionId || "").trim();
+        const identity = requestedId || randomUUID();
+        bindIdentity(identity);
+        return;
+      }
+
+      if (!playerId) {
+        throw new Error("Client must send hello first.");
+      }
+
       if (type === "create_room") {
+        const existingRoomId = playerRoom.get(playerId);
+        if (existingRoomId && rooms.has(existingRoomId)) {
+          send(socket, "room_joined", { roomId: existingRoomId, playerId });
+          rooms.get(existingRoomId).emit();
+          return;
+        }
+
         const roomId = (
           payload.roomId || Math.random().toString(36).slice(2, 7)
         ).toUpperCase();
@@ -134,6 +171,13 @@ wss.on("connection", (socket) => {
       }
 
       if (type === "join_room") {
+        const existingRoomId = playerRoom.get(playerId);
+        if (existingRoomId && rooms.has(existingRoomId)) {
+          send(socket, "room_joined", { roomId: existingRoomId, playerId });
+          rooms.get(existingRoomId).emit();
+          return;
+        }
+
         const roomId = String(payload.roomId || "")
           .trim()
           .toUpperCase();
@@ -163,6 +207,10 @@ wss.on("connection", (socket) => {
   });
 
   socket.on("close", () => {
+    if (!playerId) {
+      return;
+    }
+
     const roomId = playerRoom.get(playerId);
     if (roomId && rooms.has(roomId)) {
       const room = rooms.get(roomId);

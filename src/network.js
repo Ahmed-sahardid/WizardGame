@@ -11,21 +11,70 @@ export class NetworkClient {
       error: () => {},
       status: () => {},
     };
+    this.storageKey = "wizardgame.sessionId";
   }
 
   on(eventName, handler) {
     this.handlers[eventName] = handler;
   }
 
-  buildSocketCandidates() {
-    const protocol = location.protocol === "https:" ? "wss" : "ws";
-    const candidates = [`${protocol}://${location.host}/ws`];
-
-    const fallbackHost = location.hostname || "localhost";
-    const fallback = `${protocol}://${fallbackHost}:8080/ws`;
-    if (!candidates.includes(fallback)) {
-      candidates.push(fallback);
+  sanitizeWsUrl(input) {
+    if (!input) {
+      return null;
     }
+
+    const value = String(input).trim();
+    if (!value) {
+      return null;
+    }
+
+    if (/^wss?:\/\//i.test(value)) {
+      return value;
+    }
+
+    return null;
+  }
+
+  buildSocketCandidates() {
+    const candidates = [];
+
+    const fromQuery = this.sanitizeWsUrl(
+      new URLSearchParams(location.search).get("ws"),
+    );
+    const fromStorage = this.sanitizeWsUrl(
+      localStorage.getItem("wizardgame.wsUrl"),
+    );
+    const fromGlobal = this.sanitizeWsUrl(window.WIZARDGAME_WS_URL);
+
+    [fromQuery, fromStorage, fromGlobal].forEach((url) => {
+      if (url && !candidates.includes(url)) {
+        candidates.push(url);
+      }
+    });
+
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+
+    if (location.host) {
+      const sameOrigin = `${protocol}://${location.host}/ws`;
+      if (!candidates.includes(sameOrigin)) {
+        candidates.push(sameOrigin);
+      }
+    }
+
+    const fallbackHosts = new Set([
+      location.hostname,
+      "localhost",
+      "127.0.0.1",
+    ]);
+    fallbackHosts.forEach((host) => {
+      if (!host) {
+        return;
+      }
+      const fallback = `${protocol}://${host}:8080/ws`;
+      if (!candidates.includes(fallback)) {
+        candidates.push(fallback);
+      }
+    });
 
     return candidates;
   }
@@ -48,7 +97,13 @@ export class NetworkClient {
       index += 1;
       this.handlers.status("Connecting...");
 
-      const socket = new WebSocket(socketUrl);
+      let socket;
+      try {
+        socket = new WebSocket(socketUrl);
+      } catch {
+        tryNext();
+        return;
+      }
       let opened = false;
 
       socket.addEventListener("open", () => {
@@ -56,6 +111,11 @@ export class NetworkClient {
         this.socket = socket;
         this.isConnected = true;
         this.handlers.status(`Connected (${socketUrl})`);
+
+        localStorage.setItem("wizardgame.wsUrl", socketUrl);
+
+        const savedSession = localStorage.getItem(this.storageKey) || "";
+        this.send("hello", { sessionId: savedSession });
       });
 
       socket.addEventListener("error", () => {
@@ -79,6 +139,7 @@ export class NetworkClient {
 
         if (type === "connected") {
           this.playerId = payload.playerId;
+          localStorage.setItem(this.storageKey, payload.playerId);
           this.handlers.connected(payload);
         }
         if (type === "room_joined") {

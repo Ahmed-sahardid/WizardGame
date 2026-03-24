@@ -23,6 +23,7 @@ export function createUI(network) {
     roomId: document.getElementById("room-id"),
     createRoom: document.getElementById("create-room"),
     joinRoom: document.getElementById("join-room"),
+    toggleReady: document.getElementById("toggle-ready"),
     startGame: document.getElementById("start-game"),
   };
 
@@ -33,6 +34,7 @@ export function createUI(network) {
 
   elements.createRoom.disabled = true;
   elements.joinRoom.disabled = true;
+  elements.toggleReady.disabled = true;
   elements.startGame.disabled = true;
   elements.sendChat.disabled = true;
 
@@ -50,6 +52,10 @@ export function createUI(network) {
 
   elements.startGame.addEventListener("click", () => {
     network.action("start_game");
+  });
+
+  elements.toggleReady.addEventListener("click", () => {
+    network.action("toggle_ready");
   });
 
   elements.sendChat.addEventListener("click", () => {
@@ -281,7 +287,11 @@ export function createUI(network) {
       elements.wizardState.textContent = "Alive (heal ready)";
     }
 
-    if (!state.private.alive) {
+    if (!state.gameStarted) {
+      const hostTag = state.private.isHost ? "Host" : "Player";
+      const readyTag = me?.ready ? "Ready" : "Not ready";
+      elements.actionHint.textContent = `${hostTag} · ${readyTag} · Connected ${state.lobby.connectedCount}/6`;
+    } else if (!state.private.alive) {
       elements.actionHint.textContent = "You are dead. Observe and chat.";
     } else if (state.private.role === ROLE.KILLER) {
       elements.actionHint.textContent =
@@ -297,6 +307,14 @@ export function createUI(network) {
     if (state.private.wizardInspection) {
       elements.actionHint.textContent = `Inspect result: ${state.private.wizardInspection.role}`;
     }
+
+    elements.toggleReady.disabled = !hasAction("toggle_ready");
+    elements.toggleReady.textContent = me?.ready ? "Unready" : "Ready";
+
+    elements.startGame.disabled = !hasAction("start_game");
+    elements.startGame.textContent = state.private.isHost
+      ? "Start"
+      : "Host Only";
 
     if (state.timer.active) {
       elements.timerContainer.style.display = "flex";
@@ -318,6 +336,7 @@ export function createUI(network) {
     const connected = status.startsWith("Connected");
     elements.createRoom.disabled = !connected;
     elements.joinRoom.disabled = !connected;
+    elements.toggleReady.disabled = !connected;
     elements.startGame.disabled = !connected;
     elements.sendChat.disabled = !connected;
   }

@@ -38,6 +38,8 @@ export class GameRoom {
   constructor(roomId) {
     this.roomId = roomId;
     this.players = [];
+    this.hostId = null;
+    this.gameStarted = false;
     this.phase = PHASE.SETUP;
     this.round = 0;
     this.logs = [];
@@ -75,7 +77,54 @@ export class GameRoom {
     }
   }
 
+  requireHost(playerId) {
+    if (playerId !== this.hostId) {
+      throw new Error("Only the host can do this action.");
+    }
+  }
+
+  connectedCount() {
+    return this.players.filter((player) => player.connected).length;
+  }
+
+  allReady() {
+    return (
+      this.players.length === 6 && this.players.every((player) => player.ready)
+    );
+  }
+
+  canStartGame() {
+    return !this.gameStarted && this.connectedCount() === 6 && this.allReady();
+  }
+
+  transferHostIfNeeded() {
+    const host = this.players.find((player) => player.id === this.hostId);
+    if (host?.connected) {
+      return;
+    }
+
+    const nextHost = this.players.find((player) => player.connected);
+    this.hostId = nextHost?.id || null;
+    if (nextHost) {
+      this.addLog(`${nextHost.name} is now the host.`);
+    }
+  }
+
   addPlayer({ id, name, socket }) {
+    const existing = this.players.find((entry) => entry.id === id);
+    if (existing) {
+      if (existing.connected) {
+        throw new Error("This identity is already connected.");
+      }
+
+      existing.socket = socket;
+      existing.connected = true;
+      existing.name = name?.trim() || existing.name;
+      this.addLog(`${existing.name} reconnected.`);
+      this.emit();
+      return;
+    }
+
     if (this.players.length >= 6) {
       throw new Error("Room is full (max 6 players).");
     }
@@ -84,10 +133,15 @@ export class GameRoom {
       id,
       name: name?.trim() || `Player ${this.players.length + 1}`,
       socket,
+      ready: false,
       alive: true,
       role: null,
       connected: true,
     });
+
+    if (!this.hostId) {
+      this.hostId = id;
+    }
 
     this.addLog(
       `${this.players[this.players.length - 1].name} joined room ${this.roomId}.`,
@@ -101,7 +155,24 @@ export class GameRoom {
       return;
     }
     player.connected = false;
+    player.ready = false;
     this.addLog(`${player.name} disconnected.`);
+    this.transferHostIfNeeded();
+    this.emit();
+  }
+
+  toggleReady(playerId) {
+    if (this.gameStarted) {
+      throw new Error("Ready state is available only before game start.");
+    }
+
+    const player = this.assertPlayer(playerId);
+    if (!player.connected) {
+      throw new Error("Disconnected player cannot toggle ready.");
+    }
+
+    player.ready = !player.ready;
+    this.addLog(`${player.name} is ${player.ready ? "ready" : "not ready"}.`);
     this.emit();
   }
 
@@ -114,12 +185,15 @@ export class GameRoom {
     this.voting.endsAt = null;
   }
 
-  startGame() {
-    if (this.players.length !== 6) {
-      throw new Error("Need exactly 6 players to start.");
+  startGame(playerId) {
+    this.requireHost(playerId);
+
+    if (!this.canStartGame()) {
+      throw new Error("Need 6 connected ready players to start.");
     }
 
     this.clearVoteTimer();
+    this.gameStarted = true;
     this.phase = PHASE.SETUP;
     this.round = 0;
     this.logs = [];
@@ -143,6 +217,7 @@ export class GameRoom {
     this.players.forEach((player, index) => {
       player.role = roles[index];
       player.alive = true;
+      player.ready = false;
     });
 
     this.addLog("Game started. Roles assigned.");
@@ -192,8 +267,12 @@ export class GameRoom {
 
   startNight(playerId) {
     const player = this.assertPlayer(playerId);
+    this.requireHost(playerId);
     if (!player.alive) {
       throw new Error("Dead players cannot start phase transitions.");
+    }
+    if (!this.gameStarted) {
+      throw new Error("Game has not started yet.");
     }
     if (
       ![PHASE.SETUP, PHASE.DISCUSSION].includes(this.phase) ||
@@ -285,6 +364,7 @@ export class GameRoom {
 
   endNight(playerId) {
     const player = this.assertPlayer(playerId);
+    this.requireHost(playerId);
     if (!player.alive) {
       throw new Error("Dead players cannot end night.");
     }
@@ -318,6 +398,7 @@ export class GameRoom {
 
   startVote(playerId) {
     const player = this.assertPlayer(playerId);
+    this.requireHost(playerId);
     if (!player.alive) {
       throw new Error("Dead players cannot start vote.");
     }
@@ -339,7 +420,7 @@ export class GameRoom {
       }
       if (Date.now() >= this.voting.endsAt) {
         this.addLog("Vote timer expired. Resolving vote.");
-        this.resolveVote(playerId, true);
+        this.resolveVote(this.hostId || playerId, true);
       } else {
         this.emit();
       }
@@ -370,6 +451,10 @@ export class GameRoom {
   resolveVote(playerId, fromTimer = false) {
     if (this.phase !== PHASE.VOTING || this.gameEnded) {
       return;
+    }
+
+    if (!fromTimer) {
+      this.requireHost(playerId);
     }
 
     if (!fromTimer) {
@@ -420,17 +505,32 @@ export class GameRoom {
     }
 
     const actions = [];
-    if ([PHASE.SETUP, PHASE.DISCUSSION].includes(this.phase)) {
+
+    if (!this.gameStarted) {
+      actions.push("toggle_ready");
+      if (player.id === this.hostId && this.canStartGame()) {
+        actions.push("start_game");
+      }
+      return actions;
+    }
+
+    if (
+      player.id === this.hostId &&
+      [PHASE.SETUP, PHASE.DISCUSSION].includes(this.phase)
+    ) {
       actions.push("start_night");
     }
-    if (this.phase === PHASE.NIGHT) {
+    if (player.id === this.hostId && this.phase === PHASE.NIGHT) {
       actions.push("end_night");
     }
-    if (this.phase === PHASE.DISCUSSION) {
+    if (player.id === this.hostId && this.phase === PHASE.DISCUSSION) {
       actions.push("start_vote");
     }
     if (this.phase === PHASE.VOTING) {
-      actions.push("vote_skip", "resolve_vote", "vote_target");
+      actions.push("vote_skip", "vote_target");
+      if (player.id === this.hostId) {
+        actions.push("resolve_vote");
+      }
     }
 
     if (this.phase === PHASE.NIGHT) {
@@ -464,6 +564,7 @@ export class GameRoom {
     const players = this.players.map((player) => ({
       id: player.id,
       name: player.name,
+      ready: player.ready,
       alive: player.alive,
       connected: player.connected,
       role:
@@ -479,6 +580,8 @@ export class GameRoom {
 
     return {
       roomId: this.roomId,
+      hostId: this.hostId,
+      gameStarted: this.gameStarted,
       phase: this.phase,
       round: this.round,
       gameEnded: this.gameEnded,
@@ -494,10 +597,16 @@ export class GameRoom {
         votesCount: this.voting.votes.size,
         yourVote: this.voting.votes.get(playerId) || null,
       },
+      lobby: {
+        connectedCount: this.connectedCount(),
+        allReady: this.allReady(),
+        canStart: this.canStartGame(),
+      },
       private: {
         playerId,
         role: viewer?.role || null,
         alive: viewer?.alive || false,
+        isHost: viewer?.id === this.hostId,
         availableActions: this.availableActionsFor(viewer),
         wizardHealUsedGame: this.night.wizardHealUsedGame,
         wizardInspection: wizardPrivateInspection
