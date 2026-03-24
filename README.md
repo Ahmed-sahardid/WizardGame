@@ -82,8 +82,8 @@ If frontend and backend are on different domains, use:
 ## Room flow
 
 1. Enter your name.
-2. Host clicks **Create** (or provides room code).
-3. Other players enter the room code and click **Join**.
+2. Either click **Join Public** for automatic public matchmaking, or use private code flow.
+3. Private flow: host clicks **Create Private** with a code, others click **Join Private** with the same code.
 4. Each player clicks **Ready**.
 5. Host clicks **Start** when all 6 are connected and ready.
 

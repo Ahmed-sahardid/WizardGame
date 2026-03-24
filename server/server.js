@@ -143,7 +143,11 @@ wss.on("connection", (socket) => {
       const room = rooms.get(existingRoomId);
       try {
         room.addPlayer({ id: playerId, name: null, socket });
-        send(socket, "room_joined", { roomId: existingRoomId, playerId });
+        send(socket, "room_joined", {
+          roomId: existingRoomId,
+          playerId,
+          isPublic: !!room.isPublic,
+        });
         room.emit();
       } catch {
         // ignore automatic rejoin failures; explicit join/create can recover
@@ -170,8 +174,13 @@ wss.on("connection", (socket) => {
       if (type === "create_room") {
         const existingRoomId = playerRoom.get(playerId);
         if (existingRoomId && rooms.has(existingRoomId)) {
-          send(socket, "room_joined", { roomId: existingRoomId, playerId });
-          rooms.get(existingRoomId).emit();
+          const existingRoom = rooms.get(existingRoomId);
+          send(socket, "room_joined", {
+            roomId: existingRoomId,
+            playerId,
+            isPublic: !!existingRoom.isPublic,
+          });
+          existingRoom.emit();
           return;
         }
 
@@ -190,8 +199,13 @@ wss.on("connection", (socket) => {
       if (type === "join_room") {
         const existingRoomId = playerRoom.get(playerId);
         if (existingRoomId && rooms.has(existingRoomId)) {
-          send(socket, "room_joined", { roomId: existingRoomId, playerId });
-          rooms.get(existingRoomId).emit();
+          const existingRoom = rooms.get(existingRoomId);
+          send(socket, "room_joined", {
+            roomId: existingRoomId,
+            playerId,
+            isPublic: !!existingRoom.isPublic,
+          });
+          existingRoom.emit();
           return;
         }
 
