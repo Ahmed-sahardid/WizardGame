@@ -27,6 +27,16 @@ export function createUI(network) {
     toggleReady: document.getElementById("toggle-ready"),
     startGame: document.getElementById("start-game"),
     addBot: document.getElementById("add-bot"),
+    roleSettings: document.getElementById("role-settings"),
+    killerCount: document.getElementById("killer-count"),
+    wizardCount: document.getElementById("wizard-count"),
+    memberCount: document.getElementById("member-count"),
+    killerMinus: document.getElementById("killer-minus"),
+    killerPlus: document.getElementById("killer-plus"),
+    wizardMinus: document.getElementById("wizard-minus"),
+    wizardPlus: document.getElementById("wizard-plus"),
+    memberMinus: document.getElementById("member-minus"),
+    memberPlus: document.getElementById("member-plus"),
   };
 
   const uiState = {
@@ -74,6 +84,50 @@ export function createUI(network) {
 
   elements.addBot.addEventListener("click", () => {
     network.action("add_bot");
+  });
+
+  // Role settings handlers
+  elements.killerMinus.addEventListener("click", () => {
+    const current = uiState.roomState?.lobby?.roleCounts?.[ROLE.KILLER] || 0;
+    network.action("set_role_count", {
+      role: ROLE.KILLER,
+      count: Math.max(0, current - 1),
+    });
+  });
+  elements.killerPlus.addEventListener("click", () => {
+    const current = uiState.roomState?.lobby?.roleCounts?.[ROLE.KILLER] || 0;
+    network.action("set_role_count", {
+      role: ROLE.KILLER,
+      count: Math.min(6, current + 1),
+    });
+  });
+  elements.wizardMinus.addEventListener("click", () => {
+    const current = uiState.roomState?.lobby?.roleCounts?.[ROLE.WIZARD] || 0;
+    network.action("set_role_count", {
+      role: ROLE.WIZARD,
+      count: Math.max(0, current - 1),
+    });
+  });
+  elements.wizardPlus.addEventListener("click", () => {
+    const current = uiState.roomState?.lobby?.roleCounts?.[ROLE.WIZARD] || 0;
+    network.action("set_role_count", {
+      role: ROLE.WIZARD,
+      count: Math.min(6, current + 1),
+    });
+  });
+  elements.memberMinus.addEventListener("click", () => {
+    const current = uiState.roomState?.lobby?.roleCounts?.[ROLE.MEMBER] || 0;
+    network.action("set_role_count", {
+      role: ROLE.MEMBER,
+      count: Math.max(0, current - 1),
+    });
+  });
+  elements.memberPlus.addEventListener("click", () => {
+    const current = uiState.roomState?.lobby?.roleCounts?.[ROLE.MEMBER] || 0;
+    network.action("set_role_count", {
+      role: ROLE.MEMBER,
+      count: Math.min(6, current + 1),
+    });
   });
 
   elements.sendChat.addEventListener("click", () => {
@@ -328,6 +382,19 @@ export function createUI(network) {
 
     if (state.private.wizardInspection) {
       elements.actionHint.textContent = `Inspect result: ${state.private.wizardInspection.role}`;
+    }
+
+    // Show role settings only for host during lobby
+    if (!state.gameStarted && state.private.isHost) {
+      elements.roleSettings.style.display = "block";
+      elements.killerCount.textContent =
+        state.lobby.roleCounts[ROLE.KILLER] || 0;
+      elements.wizardCount.textContent =
+        state.lobby.roleCounts[ROLE.WIZARD] || 0;
+      elements.memberCount.textContent =
+        state.lobby.roleCounts[ROLE.MEMBER] || 0;
+    } else {
+      elements.roleSettings.style.display = "none";
     }
 
     elements.toggleReady.disabled = !hasAction("toggle_ready");

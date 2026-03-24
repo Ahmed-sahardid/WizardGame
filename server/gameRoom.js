@@ -46,6 +46,13 @@ export class GameRoom {
     this.logs = [];
     this.gameEnded = false;
 
+    // Role configuration (can be customized by host)
+    this.roleCounts = {
+      [ROLE.KILLER]: 2,
+      [ROLE.WIZARD]: 1,
+      [ROLE.MEMBER]: 3,
+    };
+
     this.night = {
       wizardUsedPower: false,
       wizardHealUsedGame: false,
@@ -261,6 +268,37 @@ export class GameRoom {
     this.emit();
   }
 
+  setRoleCount(playerId, role, count) {
+    this.requireHost(playerId);
+    if (this.gameStarted) {
+      throw new Error("Cannot adjust roles after game start.");
+    }
+
+    const validRoles = [ROLE.KILLER, ROLE.WIZARD, ROLE.MEMBER];
+    if (!validRoles.includes(role)) {
+      throw new Error("Invalid role.");
+    }
+
+    const countNum = Number(count);
+    if (countNum < 0 || countNum > 6) {
+      throw new Error("Role count must be 0-6.");
+    }
+
+    this.roleCounts[role] = countNum;
+    this.addLog(`Host adjusted ${role} count to ${countNum}.`);
+    this.emit();
+  }
+
+  buildRolePool() {
+    const pool = [];
+    Object.entries(this.roleCounts).forEach(([role, count]) => {
+      for (let i = 0; i < count; i += 1) {
+        pool.push(role);
+      }
+    });
+    return pool;
+  }
+
   clearVoteTimer() {
     if (this.voting.timerHandle) {
       clearInterval(this.voting.timerHandle);
@@ -373,9 +411,9 @@ export class GameRoom {
       timerHandle: null,
     };
 
-    const roles = shuffle(ROLE_POOL);
+    const roles = shuffle(this.buildRolePool());
     this.players.forEach((player, index) => {
-      player.role = roles[index];
+      player.role = roles[index] || ROLE.MEMBER;
       player.alive = true;
       player.ready = false;
     });
@@ -772,6 +810,7 @@ export class GameRoom {
         botCount: this.players.filter((player) => player.isBot).length,
         allReady: this.allReady(),
         canStart: this.canStartGame(),
+        roleCounts: this.roleCounts,
       },
       private: {
         playerId,

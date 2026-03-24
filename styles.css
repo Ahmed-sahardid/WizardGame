@@ -498,6 +498,51 @@ select:disabled {
   line-height: 1;
 }
 
+/* Role Settings */
+#role-settings {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #1a1624;
+  border: 1px solid #322a47;
+  border-radius: 0.25rem;
+}
+
+.role-setting {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.role-setting label {
+  margin: 0;
+  font-weight: 500;
+}
+
+.role-setting button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1rem;
+  border: 1px solid #4a4266;
+  background: #2a2233;
+  color: #f2f0ff;
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+
+.role-setting button:hover {
+  background: #3a3243;
+  border-color: #6a62a6;
+}
+
+.role-setting button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 980px) {
   .app-layout {
     grid-template-columns: 1fr;

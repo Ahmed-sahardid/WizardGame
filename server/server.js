@@ -105,6 +105,9 @@ function handleAction(room, playerId, action, payload = {}) {
     case "add_bot":
       room.addBot(playerId);
       break;
+    case "set_role_count":
+      room.setRoleCount(playerId, payload.role, payload.count);
+      break;
     default:
       throw new Error(`Unknown action: ${action}`);
   }
