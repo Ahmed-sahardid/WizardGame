@@ -255,11 +255,15 @@ export function createUI(network) {
 
       const name = document.createElement("div");
       name.className = "seat-name";
-      name.textContent = player.name;
+      name.textContent = player.isBot ? `${player.name} 🤖` : player.name;
 
       const status = document.createElement("div");
       status.className = "seat-status";
-      status.textContent = player.alive ? "Alive" : "Dead";
+      if (player.isBot) {
+        status.textContent = player.alive ? "Bot · Alive" : "Bot · Dead";
+      } else {
+        status.textContent = player.alive ? "Alive" : "Dead";
+      }
 
       seat.append(name, status);
       elements.playersCircle.appendChild(seat);
@@ -302,7 +306,7 @@ export function createUI(network) {
     if (!state.gameStarted) {
       const hostTag = state.private.isHost ? "Host" : "Player";
       const readyTag = me?.ready ? "Ready" : "Not ready";
-      elements.actionHint.textContent = `${hostTag} · ${readyTag} · Connected ${state.lobby.connectedCount}/6`;
+      elements.actionHint.textContent = `${hostTag} · ${readyTag} · Humans ${state.lobby.connectedHumans}/6 · Bots ${state.lobby.botCount}`;
     } else if (!state.private.alive) {
       elements.actionHint.textContent = "You are dead. Observe and chat.";
     } else if (state.private.role === ROLE.KILLER) {

@@ -26,7 +26,7 @@ const playerRoom = new Map();
 const sockets = new Map();
 
 function send(socket, type, payload) {
-  if (socket.readyState !== 1) {
+  if (!socket || socket.readyState !== 1) {
     return;
   }
   socket.send(JSON.stringify({ type, payload }));

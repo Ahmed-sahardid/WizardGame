@@ -38,6 +38,7 @@ export class GameRoom {
   constructor(roomId) {
     this.roomId = roomId;
     this.players = [];
+    this.botCounter = 1;
     this.hostId = null;
     this.gameStarted = false;
     this.phase = PHASE.SETUP;
@@ -87,14 +88,67 @@ export class GameRoom {
     return this.players.filter((player) => player.connected).length;
   }
 
+  humanPlayers() {
+    return this.players.filter((player) => !player.isBot);
+  }
+
+  connectedHumans() {
+    return this.players.filter((player) => !player.isBot && player.connected);
+  }
+
+  allHumansReady() {
+    const humans = this.connectedHumans();
+    return humans.length > 0 && humans.every((player) => player.ready);
+  }
+
   allReady() {
-    return (
-      this.players.length === 6 && this.players.every((player) => player.ready)
-    );
+    return this.allHumansReady();
   }
 
   canStartGame() {
-    return !this.gameStarted && this.connectedCount() === 6 && this.allReady();
+    return (
+      !this.gameStarted && this.allHumansReady() && this.players.length <= 6
+    );
+  }
+
+  aliveBotsByRole(role) {
+    return this.players.filter(
+      (player) => player.isBot && player.alive && player.role === role,
+    );
+  }
+
+  aliveTargetsForBots(excludeIds = new Set(), disallowRole = null) {
+    return this.players.filter(
+      (player) =>
+        player.alive &&
+        !excludeIds.has(player.id) &&
+        (disallowRole ? player.role !== disallowRole : true),
+    );
+  }
+
+  pickRandomPlayer(candidates) {
+    if (!candidates.length) {
+      return null;
+    }
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  fillBotsToSix() {
+    while (this.players.length < 6) {
+      const botId = `bot-${this.roomId}-${this.botCounter}`;
+      this.botCounter += 1;
+
+      this.players.push({
+        id: botId,
+        name: `Bot ${this.botCounter - 1}`,
+        socket: null,
+        ready: true,
+        alive: true,
+        role: null,
+        connected: true,
+        isBot: true,
+      });
+    }
   }
 
   transferHostIfNeeded() {
@@ -137,6 +191,7 @@ export class GameRoom {
       alive: true,
       role: null,
       connected: true,
+      isBot: false,
     });
 
     if (!this.hostId) {
@@ -167,6 +222,9 @@ export class GameRoom {
     }
 
     const player = this.assertPlayer(playerId);
+    if (player.isBot) {
+      throw new Error("Bots do not toggle ready.");
+    }
     if (!player.connected) {
       throw new Error("Disconnected player cannot toggle ready.");
     }
@@ -185,12 +243,87 @@ export class GameRoom {
     this.voting.endsAt = null;
   }
 
+  runBotNightActions() {
+    if (this.phase !== PHASE.NIGHT || this.gameEnded) {
+      return;
+    }
+
+    const killerBots = this.aliveBotsByRole(ROLE.KILLER);
+    killerBots.forEach((killerBot) => {
+      const targets = this.aliveTargetsForBots(
+        new Set([killerBot.id]),
+        ROLE.KILLER,
+      );
+      const target = this.pickRandomPlayer(targets);
+      if (target) {
+        this.night.killSelections.set(killerBot.id, target.id);
+      }
+    });
+
+    const wizardBot = this.aliveBotsByRole(ROLE.WIZARD)[0] || null;
+    if (!wizardBot || this.night.wizardUsedPower) {
+      return;
+    }
+
+    const shouldHeal =
+      !this.night.wizardHealUsedGame &&
+      this.night.killSelections.size > 0 &&
+      Math.random() < 0.4;
+
+    if (shouldHeal) {
+      this.night.wizardUsedPower = true;
+      this.night.wizardHealUsedGame = true;
+      this.night.killSelections = new Map();
+      this.addLog("Wizard bot used heal.");
+      return;
+    }
+
+    const inspectTargets = this.aliveTargetsForBots(new Set([wizardBot.id]));
+    const inspectTarget = this.pickRandomPlayer(inspectTargets);
+    if (inspectTarget) {
+      this.night.wizardUsedPower = true;
+      this.night.inspectedByWizard = {
+        viewerId: wizardBot.id,
+        targetId: inspectTarget.id,
+        role: inspectTarget.role,
+      };
+      this.addLog("Wizard bot used inspect.");
+    }
+  }
+
+  applyBotVotes() {
+    if (this.phase !== PHASE.VOTING || this.gameEnded) {
+      return;
+    }
+
+    const aliveBots = this.players.filter(
+      (player) => player.isBot && player.alive,
+    );
+    aliveBots.forEach((bot) => {
+      if (this.voting.votes.has(bot.id)) {
+        return;
+      }
+
+      const skip = Math.random() < 0.3;
+      if (skip) {
+        this.voting.votes.set(bot.id, "skip");
+        return;
+      }
+
+      const targets = this.aliveTargetsForBots(new Set([bot.id]));
+      const target = this.pickRandomPlayer(targets);
+      this.voting.votes.set(bot.id, target ? target.id : "skip");
+    });
+  }
+
   startGame(playerId) {
     this.requireHost(playerId);
 
     if (!this.canStartGame()) {
-      throw new Error("Need 6 connected ready players to start.");
+      throw new Error("All connected human players must be ready to start.");
     }
+
+    this.fillBotsToSix();
 
     this.clearVoteTimer();
     this.gameStarted = true;
@@ -290,6 +423,7 @@ export class GameRoom {
     this.voting.votes = new Map();
 
     this.addLog(`Night ${this.round} started.`);
+    this.runBotNightActions();
     this.emit();
   }
 
@@ -427,6 +561,7 @@ export class GameRoom {
     }, 1000);
 
     this.addLog("Voting phase started.");
+    this.applyBotVotes();
     this.emit();
   }
 
@@ -466,6 +601,7 @@ export class GameRoom {
 
     this.clearVoteTimer();
 
+    this.applyBotVotes();
     const choice = majorityChoice([...this.voting.votes.values()]);
     if (!choice || choice === "skip") {
       this.addLog("Vote result: skip.");
@@ -567,6 +703,7 @@ export class GameRoom {
       ready: player.ready,
       alive: player.alive,
       connected: player.connected,
+      isBot: !!player.isBot,
       role:
         revealRoles || player.id === playerId || !player.alive
           ? player.role
@@ -599,6 +736,8 @@ export class GameRoom {
       },
       lobby: {
         connectedCount: this.connectedCount(),
+        connectedHumans: this.connectedHumans().length,
+        botCount: this.players.filter((player) => player.isBot).length,
         allReady: this.allReady(),
         canStart: this.canStartGame(),
       },
