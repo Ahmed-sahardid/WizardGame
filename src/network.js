@@ -12,6 +12,7 @@ export class NetworkClient {
       status: () => {},
     };
     this.storageKey = "wizardgame.sessionId";
+    this.tokenStorageKey = "wizardgame.sessionToken";
   }
 
   on(eventName, handler) {
@@ -115,7 +116,11 @@ export class NetworkClient {
         localStorage.setItem("wizardgame.wsUrl", socketUrl);
 
         const savedSession = localStorage.getItem(this.storageKey) || "";
-        this.send("hello", { sessionId: savedSession });
+        const savedToken = localStorage.getItem(this.tokenStorageKey) || "";
+        this.send("hello", {
+          sessionId: savedSession,
+          sessionToken: savedToken,
+        });
       });
 
       socket.addEventListener("error", () => {
@@ -140,6 +145,9 @@ export class NetworkClient {
         if (type === "connected") {
           this.playerId = payload.playerId;
           localStorage.setItem(this.storageKey, payload.playerId);
+          if (payload.sessionToken) {
+            localStorage.setItem(this.tokenStorageKey, payload.sessionToken);
+          }
           this.handlers.connected(payload);
         }
         if (type === "room_joined") {

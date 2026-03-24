@@ -692,7 +692,10 @@ export class GameRoom {
 
   sendChat(playerId, text) {
     const player = this.assertPlayer(playerId);
-    const message = text?.trim();
+    const message = String(text || "")
+      .replace(/[\r\n\t]/g, " ")
+      .trim()
+      .slice(0, 240);
     if (!message) {
       return;
     }

@@ -46,13 +46,15 @@ Deploy this app to any Node host (Render, Railway, Fly.io, VPS, etc.).
 
 - The server already uses `PORT` from environment.
 - Serve the same app origin over HTTPS so the client can use secure WebSockets automatically.
+- Set `SESSION_SECRET` to a long random secret in production.
+- Set `ALLOWED_ORIGINS` to your exact frontend origin(s), comma-separated.
 - Optional: force a remote websocket endpoint with query param:
   - `https://your-frontend.example.com/?ws=wss://your-backend.example.com/ws`
 
 ### Docker option
 
 1. Build image: `docker build -t wizardgame .`
-2. Run container: `docker run -p 8080:8080 -e PORT=8080 wizardgame`
+2. Run container: `docker run -p 8080:8080 -e PORT=8080 -e SESSION_SECRET='replace-me' -e ALLOWED_ORIGINS='https://yourdomain.com' wizardgame`
 3. Open `http://localhost:8080` (or your deployed host URL).
 
 ### Render one-click option
