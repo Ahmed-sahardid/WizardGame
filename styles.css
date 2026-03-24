@@ -260,6 +260,17 @@ section {
   font-weight: 700;
 }
 
+#action-hint {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.6rem 0.8rem;
+  background: rgba(138, 125, 214, 0.15);
+  border-radius: 6px;
+  border: 1px solid #6a62a6;
+  color: #d9d5ff;
+  line-height: 1.4;
+}
+
 .action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
