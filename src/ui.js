@@ -42,6 +42,8 @@ export function createUI(network) {
   const uiState = {
     roomState: null,
     selectedSeatId: null,
+    flippedSeatId: null,
+    flippedRole: null,
   };
 
   elements.joinPublic.disabled = true;
@@ -306,6 +308,13 @@ export function createUI(network) {
       seat.addEventListener("click", () => {
         uiState.selectedSeatId = player.id;
 
+        // Wizard inspect during night
+        if (hasAction("wizard_inspect") && state.phase === PHASE.NIGHT) {
+          uiState.flippedSeatId = player.id;
+          uiState.flippedRole = player.role;
+          network.action("wizard_inspect", { targetId: player.id });
+        }
+
         if (hasAction("vote_target") && state.phase === PHASE.VOTING) {
           network.action("vote_target", { targetId: player.id });
         }
@@ -325,7 +334,17 @@ export function createUI(network) {
         status.textContent = player.alive ? "Alive" : "Dead";
       }
 
-      seat.append(name, status);
+      // Show revealed role for wizard inspection
+      if (uiState.flippedSeatId === player.id && uiState.flippedRole) {
+        seat.classList.add("flipped");
+        const roleDisplay = document.createElement("div");
+        roleDisplay.className = "seat-role";
+        roleDisplay.textContent = uiState.flippedRole;
+        seat.append(name, roleDisplay);
+      } else {
+        seat.append(name, status);
+      }
+
       elements.playersCircle.appendChild(seat);
     });
   }
@@ -382,6 +401,18 @@ export function createUI(network) {
 
     if (state.private.wizardInspection) {
       elements.actionHint.textContent = `Inspect result: ${state.private.wizardInspection.role}`;
+      // Keep the card flipped showing the inspected role
+      const target = state.players.find(
+        (p) => p.id === state.private.wizardInspection.targetId,
+      );
+      if (target) {
+        uiState.flippedSeatId = target.id;
+        uiState.flippedRole = state.private.wizardInspection.role;
+      }
+    } else if (state.phase !== PHASE.NIGHT) {
+      // Clear flipped state when leaving night phase
+      uiState.flippedSeatId = null;
+      uiState.flippedRole = null;
     }
 
     // Show role settings only for host during lobby
