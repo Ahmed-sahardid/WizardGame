@@ -35,6 +35,7 @@ function send(socket, type, payload) {
 function getOrCreateRoom(roomId) {
   if (!rooms.has(roomId)) {
     const room = new GameRoom(roomId);
+    room.isPublic = false;
     room.setStateHandler(() => {
       room.players.forEach((player) => {
         send(player.socket, "room_state", room.serializeFor(player.id));
@@ -43,6 +44,21 @@ function getOrCreateRoom(roomId) {
     rooms.set(roomId, room);
   }
   return rooms.get(roomId);
+}
+
+function findOrCreatePublicRoom() {
+  const available = [...rooms.values()].find(
+    (room) => room.isPublic && room.players.length < 6 && !room.gameStarted,
+  );
+
+  if (available) {
+    return available;
+  }
+
+  const roomId = `PUB${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const room = getOrCreateRoom(roomId);
+  room.isPublic = true;
+  return room;
 }
 
 function handleAction(room, playerId, action, payload = {}) {
@@ -163,9 +179,10 @@ wss.on("connection", (socket) => {
           payload.roomId || Math.random().toString(36).slice(2, 7)
         ).toUpperCase();
         const room = getOrCreateRoom(roomId);
+        room.isPublic = false;
         room.addPlayer({ id: playerId, name: payload.name, socket });
         playerRoom.set(playerId, roomId);
-        send(socket, "room_joined", { roomId, playerId });
+        send(socket, "room_joined", { roomId, playerId, isPublic: false });
         room.emit();
         return;
       }
@@ -187,7 +204,36 @@ wss.on("connection", (socket) => {
         const room = rooms.get(roomId);
         room.addPlayer({ id: playerId, name: payload.name, socket });
         playerRoom.set(playerId, roomId);
-        send(socket, "room_joined", { roomId, playerId });
+        send(socket, "room_joined", {
+          roomId,
+          playerId,
+          isPublic: !!room.isPublic,
+        });
+        room.emit();
+        return;
+      }
+
+      if (type === "join_public") {
+        const existingRoomId = playerRoom.get(playerId);
+        if (existingRoomId && rooms.has(existingRoomId)) {
+          const existingRoom = rooms.get(existingRoomId);
+          send(socket, "room_joined", {
+            roomId: existingRoomId,
+            playerId,
+            isPublic: !!existingRoom.isPublic,
+          });
+          existingRoom.emit();
+          return;
+        }
+
+        const room = findOrCreatePublicRoom();
+        room.addPlayer({ id: playerId, name: payload.name, socket });
+        playerRoom.set(playerId, room.roomId);
+        send(socket, "room_joined", {
+          roomId: room.roomId,
+          playerId,
+          isPublic: true,
+        });
         room.emit();
         return;
       }

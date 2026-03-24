@@ -174,6 +174,18 @@ export class NetworkClient {
     this.send("join_room", { name, roomId });
   }
 
+  joinPublic(name) {
+    this.send("join_public", { name });
+  }
+
+  createPrivate(name, code = "") {
+    this.send("create_room", { name, roomId: code });
+  }
+
+  joinPrivate(name, code) {
+    this.send("join_room", { name, roomId: code });
+  }
+
   action(action, payload = {}) {
     this.send("action", { action, ...payload });
   }

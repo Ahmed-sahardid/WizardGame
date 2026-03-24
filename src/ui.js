@@ -20,9 +20,10 @@ export function createUI(network) {
 
     connectionStatus: document.getElementById("connection-status"),
     playerName: document.getElementById("player-name"),
-    roomId: document.getElementById("room-id"),
-    createRoom: document.getElementById("create-room"),
-    joinRoom: document.getElementById("join-room"),
+    privateCode: document.getElementById("private-code"),
+    joinPublic: document.getElementById("join-public"),
+    createPrivate: document.getElementById("create-private"),
+    joinPrivate: document.getElementById("join-private"),
     toggleReady: document.getElementById("toggle-ready"),
     startGame: document.getElementById("start-game"),
   };
@@ -32,8 +33,9 @@ export function createUI(network) {
     selectedSeatId: null,
   };
 
-  elements.createRoom.disabled = true;
-  elements.joinRoom.disabled = true;
+  elements.joinPublic.disabled = true;
+  elements.createPrivate.disabled = true;
+  elements.joinPrivate.disabled = true;
   elements.toggleReady.disabled = true;
   elements.startGame.disabled = true;
   elements.sendChat.disabled = true;
@@ -42,12 +44,22 @@ export function createUI(network) {
     return elements.playerName.value.trim() || "Guest";
   }
 
-  elements.createRoom.addEventListener("click", () => {
-    network.createRoom(safeName(), elements.roomId.value.trim().toUpperCase());
+  elements.joinPublic.addEventListener("click", () => {
+    network.joinPublic(safeName());
   });
 
-  elements.joinRoom.addEventListener("click", () => {
-    network.joinRoom(safeName(), elements.roomId.value.trim().toUpperCase());
+  elements.createPrivate.addEventListener("click", () => {
+    network.createPrivate(
+      safeName(),
+      elements.privateCode.value.trim().toUpperCase(),
+    );
+  });
+
+  elements.joinPrivate.addEventListener("click", () => {
+    network.joinPrivate(
+      safeName(),
+      elements.privateCode.value.trim().toUpperCase(),
+    );
   });
 
   elements.startGame.addEventListener("click", () => {
@@ -334,16 +346,21 @@ export function createUI(network) {
   function setConnectionStatus(status) {
     elements.connectionStatus.textContent = status;
     const connected = status.startsWith("Connected");
-    elements.createRoom.disabled = !connected;
-    elements.joinRoom.disabled = !connected;
+    elements.joinPublic.disabled = !connected;
+    elements.createPrivate.disabled = !connected;
+    elements.joinPrivate.disabled = !connected;
     elements.toggleReady.disabled = !connected;
     elements.startGame.disabled = !connected;
     elements.sendChat.disabled = !connected;
   }
 
-  function setRoomId(roomId) {
-    elements.roomId.value = roomId;
-    pushSystemMessage(`Joined room ${roomId}.`);
+  function setRoomId(roomId, isPublic = false) {
+    if (!isPublic) {
+      elements.privateCode.value = roomId;
+    }
+    pushSystemMessage(
+      `Joined ${isPublic ? "public" : "private"} room ${roomId}.`,
+    );
   }
 
   function pushSystemMessage(text) {

@@ -5,7 +5,9 @@ const network = new NetworkClient();
 const ui = createUI(network);
 
 network.on("status", (value) => ui.setConnectionStatus(value));
-network.on("joined", ({ roomId }) => ui.setRoomId(roomId));
+network.on("joined", ({ roomId, isPublic }) =>
+  ui.setRoomId(roomId, !!isPublic),
+);
 network.on("state", (state) => ui.render(state));
 network.on("error", (message) => ui.pushSystemMessage(`Error: ${message}`));
 
