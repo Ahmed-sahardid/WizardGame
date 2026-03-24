@@ -3,6 +3,7 @@ export class NetworkClient {
     this.socket = null;
     this.playerId = null;
     this.roomId = null;
+    this.isConnected = false;
     this.handlers = {
       connected: () => {},
       joined: () => {},
@@ -16,38 +17,84 @@ export class NetworkClient {
     this.handlers[eventName] = handler;
   }
 
-  connect() {
+  buildSocketCandidates() {
     const protocol = location.protocol === "https:" ? "wss" : "ws";
-    const socketUrl = `${protocol}://${location.host}/ws`;
-    this.socket = new WebSocket(socketUrl);
+    const candidates = [`${protocol}://${location.host}/ws`];
 
-    this.socket.addEventListener("open", () => {
-      this.handlers.status("Connected");
-    });
+    const fallbackHost = location.hostname || "localhost";
+    const fallback = `${protocol}://${fallbackHost}:8080/ws`;
+    if (!candidates.includes(fallback)) {
+      candidates.push(fallback);
+    }
 
-    this.socket.addEventListener("close", () => {
-      this.handlers.status("Disconnected");
-    });
+    return candidates;
+  }
 
-    this.socket.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data);
-      const { type, payload } = message;
+  connect() {
+    const candidates = this.buildSocketCandidates();
+    let index = 0;
 
-      if (type === "connected") {
-        this.playerId = payload.playerId;
-        this.handlers.connected(payload);
+    const tryNext = () => {
+      if (index >= candidates.length) {
+        this.isConnected = false;
+        this.handlers.status("Disconnected");
+        this.handlers.error(
+          "Unable to connect to websocket. Make sure `npm start` is running and open http://localhost:8080.",
+        );
+        return;
       }
-      if (type === "room_joined") {
-        this.roomId = payload.roomId;
-        this.handlers.joined(payload);
-      }
-      if (type === "room_state") {
-        this.handlers.state(payload);
-      }
-      if (type === "error") {
-        this.handlers.error(payload.message || "Request failed");
-      }
-    });
+
+      const socketUrl = candidates[index];
+      index += 1;
+      this.handlers.status("Connecting...");
+
+      const socket = new WebSocket(socketUrl);
+      let opened = false;
+
+      socket.addEventListener("open", () => {
+        opened = true;
+        this.socket = socket;
+        this.isConnected = true;
+        this.handlers.status(`Connected (${socketUrl})`);
+      });
+
+      socket.addEventListener("error", () => {
+        if (!opened) {
+          socket.close();
+        }
+      });
+
+      socket.addEventListener("close", () => {
+        if (!opened) {
+          tryNext();
+          return;
+        }
+        this.isConnected = false;
+        this.handlers.status("Disconnected");
+      });
+
+      socket.addEventListener("message", (event) => {
+        const message = JSON.parse(event.data);
+        const { type, payload } = message;
+
+        if (type === "connected") {
+          this.playerId = payload.playerId;
+          this.handlers.connected(payload);
+        }
+        if (type === "room_joined") {
+          this.roomId = payload.roomId;
+          this.handlers.joined(payload);
+        }
+        if (type === "room_state") {
+          this.handlers.state(payload);
+        }
+        if (type === "error") {
+          this.handlers.error(payload.message || "Request failed");
+        }
+      });
+    };
+
+    tryNext();
   }
 
   send(type, payload) {

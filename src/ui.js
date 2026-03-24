@@ -31,6 +31,11 @@ export function createUI(network) {
     selectedSeatId: null,
   };
 
+  elements.createRoom.disabled = true;
+  elements.joinRoom.disabled = true;
+  elements.startGame.disabled = true;
+  elements.sendChat.disabled = true;
+
   function safeName() {
     return elements.playerName.value.trim() || "Guest";
   }
@@ -310,6 +315,11 @@ export function createUI(network) {
 
   function setConnectionStatus(status) {
     elements.connectionStatus.textContent = status;
+    const connected = status.startsWith("Connected");
+    elements.createRoom.disabled = !connected;
+    elements.joinRoom.disabled = !connected;
+    elements.startGame.disabled = !connected;
+    elements.sendChat.disabled = !connected;
   }
 
   function setRoomId(roomId) {
