@@ -102,6 +102,9 @@ function handleAction(room, playerId, action, payload = {}) {
     case "chat":
       room.sendChat(playerId, payload.message || "");
       break;
+    case "add_bot":
+      room.addBot(playerId);
+      break;
     default:
       throw new Error(`Unknown action: ${action}`);
   }

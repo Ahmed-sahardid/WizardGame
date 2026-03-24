@@ -234,6 +234,33 @@ export class GameRoom {
     this.emit();
   }
 
+  addBot(playerId) {
+    this.requireHost(playerId);
+    if (this.gameStarted) {
+      throw new Error("Cannot add bots after game start.");
+    }
+    if (this.players.length >= 6) {
+      throw new Error("Room is full (max 6 players).");
+    }
+
+    const botId = `bot-${this.roomId}-${this.botCounter}`;
+    this.botCounter += 1;
+
+    this.players.push({
+      id: botId,
+      name: `Bot ${this.botCounter - 1}`,
+      socket: null,
+      ready: true,
+      alive: true,
+      role: null,
+      connected: true,
+      isBot: true,
+    });
+
+    this.addLog(`Bot ${this.botCounter - 1} joined.`);
+    this.emit();
+  }
+
   clearVoteTimer() {
     if (this.voting.timerHandle) {
       clearInterval(this.voting.timerHandle);
@@ -644,8 +671,13 @@ export class GameRoom {
 
     if (!this.gameStarted) {
       actions.push("toggle_ready");
-      if (player.id === this.hostId && this.canStartGame()) {
-        actions.push("start_game");
+      if (player.id === this.hostId) {
+        if (this.players.length < 6) {
+          actions.push("add_bot");
+        }
+        if (this.canStartGame()) {
+          actions.push("start_game");
+        }
       }
       return actions;
     }

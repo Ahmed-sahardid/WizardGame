@@ -26,6 +26,7 @@ export function createUI(network) {
     joinPrivate: document.getElementById("join-private"),
     toggleReady: document.getElementById("toggle-ready"),
     startGame: document.getElementById("start-game"),
+    addBot: document.getElementById("add-bot"),
   };
 
   const uiState = {
@@ -38,6 +39,7 @@ export function createUI(network) {
   elements.joinPrivate.disabled = true;
   elements.toggleReady.disabled = true;
   elements.startGame.disabled = true;
+  elements.addBot.disabled = true;
   elements.sendChat.disabled = true;
 
   function safeName() {
@@ -68,6 +70,10 @@ export function createUI(network) {
 
   elements.toggleReady.addEventListener("click", () => {
     network.action("toggle_ready");
+  });
+
+  elements.addBot.addEventListener("click", () => {
+    network.action("add_bot");
   });
 
   elements.sendChat.addEventListener("click", () => {
@@ -326,6 +332,8 @@ export function createUI(network) {
 
     elements.toggleReady.disabled = !hasAction("toggle_ready");
     elements.toggleReady.textContent = me?.ready ? "Unready" : "Ready";
+
+    elements.addBot.disabled = !hasAction("add_bot");
 
     elements.startGame.disabled = !hasAction("start_game");
     elements.startGame.textContent = state.private.isHost
